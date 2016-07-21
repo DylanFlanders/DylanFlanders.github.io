@@ -1,0 +1,39 @@
+$primaryColor: #E4F8BE; 
+$fontColor: #333;
+$body-width: 70%;
+
+body {
+    background: $primaryColor;
+    width: $body-width;
+    margin: 60px auto;
+}
+
+.container {
+  	p {
+        font-size: 1.5em;
+    	line-height: 1.4em;
+    	color: $fontColor;
+    }
+}
+
+nav, footer {
+	ul {
+	    font-family:'Helvetica', 'Arial', 'Sans-Serif';
+	    padding: 0px;
+	    list-style: none;
+	    font-weight: bold;
+
+	    li {
+		    display: inline;
+		    margin-right: 20px;
+	    }
+    }
+}
+
+a {
+    text-decoration: none;
+    color: #999;
+}
+a:hover {
+    text-decoration: underline;
+}
