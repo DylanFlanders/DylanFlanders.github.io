@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <style> 
+            h1 {
+                text-align: center;
+                color: black;
+            }
+            #directions {
+                text-align: center;
+                color: black;
+                margin-bottom: 20px;
+            }
+            #code {
+                white-space: pre;
+                margin: 20px;
+            }
+            tr, td, table {
+                border-style: solid;
+                border-width: 1px;
+                border-color: black;
+                background-color: gray;
+                margin: auto;
+            }
+            td {
+                height: 3px;
+                width: 3px;
+            }
+            td:hover {
+                background-color: black;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1> Pixel Mapper </h1>
+
+        <div id="directions">
+            <div> 1-6 to change colors. </div>
+            <div> Space to print code. </div>
+            <div> "e" to toggle eraser. </div>
+            <div> "c" to toggle crosshairs. </div>
+        </div>
+
+        <table>
+            <tbody id="tbody"></tbody>
+        </table>
+
+        <div id="code">Code goes here.</div>
+
+        <script>
+            var H_LENGTH = 640;
+            var V_LENGTH = 480;
+            var SCALE = 5;
+            var H_OFFSET = 0; // 144;
+            var V_OFFSET = 0; // 31;
+
+            var isDrawing = false;
+            var erase = false;
+            var color = "red";
+            var valMap = new Map();
+            var middleCells = [];
+            var crosshairsOn = false;
+
+            window.onload = function() {
+                document.addEventListener("mousedown", handleMousedown);
+                document.addEventListener("mouseup", handleMouseup);
+                document.addEventListener("keypress", handleKeypress);
+                valMap.set("red", []);
+                valMap.set("orange", []);
+                valMap.set("yellow", []);
+                valMap.set("green", []);
+                valMap.set("blue", []);
+                valMap.set("purple", []);
+                grid(V_LENGTH / SCALE, H_LENGTH / SCALE);
+            }
+
+            function grid(rows, cols) {
+                var tbody = document.getElementById("tbody");
+
+                var middleRow = Math.floor(rows/2);
+                var middleCol = Math.floor(cols/2);
+
+                for (var r = 0; r < rows; r++) {
+                    var row = document.createElement("tr");
+                    for (var c = 0; c < cols; c++) {
+                        var cell = document.createElement("td");
+                        cell.hpos = c;
+                        cell.vpos = r;
+                        cell.addEventListener("mousedown", handleCellMousedown);
+                        cell.addEventListener("mouseover", handleMouseover);
+                        row.appendChild(cell);
+
+                        if (r == middleRow || (rows%2 == 0 && r == middleRow - 1)) {
+                            middleCells.push(cell);
+                        } else if (c == middleCol || (cols%2 == 0 && c == middleCol - 1)) {
+                            middleCells.push(cell);
+                        }
+                    }
+                    tbody.appendChild(row);
+                }
+
+                toggleCrosshairs();
+            }
+
+            function handleMousedown(event) {
+                isDrawing = true;
+            }
+
+            function handleMouseup(event) {
+                isDrawing = false;
+            }
+
+            function handleKeypress(event) {
+                if (event.keyCode == 49) { // Pressed "1"
+                    color = "red";
+                    erase = false;
+                } else if (event.keyCode == 50) {
+                    color = "orange";
+                    erase = false;
+                } else if (event.keyCode == 51) {
+                    color = "yellow";
+                    erase = false;
+                } else if (event.keyCode == 52) {
+                    color = "green";
+                    erase = false;
+                } else if (event.keyCode == 53) {
+                    color = "blue";
+                    erase = false;
+                } else if (event.keyCode == 54) {
+                    color = "purple";
+                    erase = false;
+                } else if (event.keyCode == 32) { // Pressed "space"
+                    printScreen();
+                } else if (event.key == "e") {
+                    erase = !erase;
+                } else if (event.key == "c") {
+                    crosshairsOn = !crosshairsOn;
+                    toggleCrosshairs();
+                }
+            }
+
+            function toggleCrosshairs() {
+                for (var i in middleCells) {
+                    var cell = middleCells[i];
+                    if (crosshairsOn) {
+                        cell.style.borderColor = "white";
+                    } else {
+                        cell.style.borderColor = "black";
+                    }
+                }
+            }
+
+            function handleCellMousedown(event) {
+                isDrawing = true;
+                handleMouseover(event);
+            }
+
+            function handleMouseover(event) {
+                if (!isDrawing) {
+                    return;
+                }
+                var hpos = event.target.hpos;
+                var vpos = event.target.vpos;
+
+                // Remove this position from all val arrays
+                for (var valArray of valMap.values()) {
+                    var index = valArray.findIndex(function(element) { 
+                        return element.hpos == hpos && element.vpos == vpos });
+                    if (index != -1) {
+                        valArray.splice(index, 1);
+                    }
+                }
+
+                if (erase) {
+                    event.target.style.backgroundColor = "gray";
+                } else {
+                    // Add this position back to the val array for the current color
+                    event.target.style.backgroundColor = color;
+                    valMap.get(color).push({hpos: hpos, vpos: vpos});
+                }
+            }
+
+            function printScreen() {
+                var codeElement = document.getElementById("code");
+                var code = "";
+                for (var [key, valArray] of valMap.entries()) {
+                    if (valArray.length == 0) {
+                        continue;
+                    }
+                    code += "else if ("
+                    for (var i = 0; i < valArray.length; i++) {
+                        var pair = valArray[i];
+                        if (i != 0) {
+                            code += " || "
+                        }
+                        code += printExact(pair);
+                    }
+                    code += ") begin\n";
+                        code += "\tred = /" + key + "/;\n";
+                        code += "\tgreen = /" + key + "/;\n";
+                        code += "\tblue = /" + key + "/;\n";
+                        code += "\tend\n"
+                }
+                codeElement.textContent = code;
+            }
+
+            function printExact(pair) {
+                var vc = V_OFFSET + pair.vpos;
+                var hc = H_OFFSET + pair.hpos;
+                return "(vc=="+vc+" && hc=="+hc+")";
+            }
+
+            function printScaled(pair) {
+                var vc_start = V_OFFSET + SCALE * pair.vpos; // inclusive
+                var hc_start = H_OFFSET + SCALE * pair.hpos; // inclusive
+                var vc_end = vc_start + SCALE;  // exclusive
+                var hc_end = hc_start + SCALE; // exclusive
+                var condition = "(vc>="+vc_start+" && vc<"+vc_end;
+                condition += " && hc>="+hc_start+" && hc<"+hc_end+")";
+                return condition;
+            }
+
+        </script>
+
+    </body>
+</html>
