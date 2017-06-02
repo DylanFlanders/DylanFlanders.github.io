@@ -53,8 +53,8 @@
             var H_LENGTH = 640;
             var V_LENGTH = 480;
             var SCALE = 5;
-            var H_OFFSET = 0; // 144;
-            var V_OFFSET = 0; // 31;
+            var H_OFFSET = 144;
+            var V_OFFSET = 31;
 
             var isDrawing = false;
             var erase = false;
@@ -195,7 +195,7 @@
                         if (i != 0) {
                             code += " || "
                         }
-                        code += printExact(pair);
+                        code += printScaled(pair);
                     }
                     code += ") begin\n";
                         code += "\tred = /" + key + "/;\n";
